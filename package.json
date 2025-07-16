@@ -3,10 +3,6 @@
   "version": "1.0.0",
   "description": "Syrian E-Commerce Platform",
   "private": true,
-  "workspaces": [
-    "frontend",
-    "services/*"
-  ],
   "scripts": {
     "dev": "echo 'Use npm run dev in specific workspace'",
     "build": "npm run build --workspaces --if-present",
