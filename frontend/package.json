@@ -28,7 +28,21 @@
     "percy": "percy snapshot ./out",
     "prepare": "husky install",
     "pre-commit": "lint-staged",
-    "validate": "npm run type-check && npm run lint && npm run test && npm run check:bundle"
+    "validate": "npm run type-check && npm run lint && npm run test && npm run check:bundle",
+    "test:unit": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:rtl": "vitest run --config vitest.rtl.config.ts",
+    "test:a11y": "vitest run --config vitest.a11y.config.ts",
+    "test:contrast": "node scripts/test-contrast.js",
+    "test:keyboard": "playwright test tests/keyboard.spec.ts",
+    "test:screen-reader": "playwright test tests/screen-reader.spec.ts",
+    "test:visual": "percy exec -- playwright test tests/visual.spec.ts",
+    "test:visual:rtl": "percy exec -- playwright test tests/visual-rtl.spec.ts",
+    "test:e2e:web": "playwright test",
+    "a11y:report": "node scripts/generate-a11y-report.js",
+    "lighthouse:ci": "lhci autorun",
+    "build:analyze": "ANALYZE=true next build",
+    "complexity:check": "node scripts/check-complexity.js"
   },
   "dependencies": {
     "next": "14.1.0",

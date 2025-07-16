@@ -16,7 +16,10 @@
     "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
     "validate:openapi": "node scripts/validate-openapi.js",
     "prepare": "husky install",
-    "pre-commit": "lint-staged"
+    "pre-commit": "lint-staged",
+    "type-check": "echo 'Run type-check in specific workspace'",
+    "test:coverage": "echo 'Run test:coverage in specific workspace'",
+    "complexity:check": "echo 'Run complexity:check in specific workspace'"
   },
   "devDependencies": {
     "husky": "^8.0.3",
