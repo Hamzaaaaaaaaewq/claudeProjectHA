@@ -1,9 +1,14 @@
 /** @type {import('next').NextConfig} */
 
-const { withSentryConfig } = require('@sentry/nextjs');
-const withBundleAnalyzer = require('@next/bundle-analyzer')({
-  enabled: process.env.ANALYZE === 'true',
-});
+// Optional dependencies - only load if available
+let withBundleAnalyzer = (config) => config;
+try {
+  withBundleAnalyzer = require('@next/bundle-analyzer')({
+    enabled: process.env.ANALYZE === 'true',
+  });
+} catch (e) {
+  // Bundle analyzer not installed
+}
 
 const nextConfig = {
   reactStrictMode: true,
@@ -117,11 +122,11 @@ const nextConfig = {
       '@': __dirname + '/src',
     };
     
-    // Handle SVG imports
-    config.module.rules.push({
-      test: /\.svg$/,
-      use: ['@svgr/webpack'],
-    });
+    // Handle SVG imports (disabled until @svgr/webpack is installed)
+    // config.module.rules.push({
+    //   test: /\.svg$/,
+    //   use: ['@svgr/webpack'],
+    // });
     
     // Ignore specific modules in browser
     if (!isServer) {
@@ -190,10 +195,5 @@ const sentryWebpackPluginOptions = {
   automaticVercelMonitors: true,
 };
 
-// Export with bundle analyzer and Sentry
-module.exports = process.env.NODE_ENV === 'production'
-  ? withSentryConfig(
-      withBundleAnalyzer(nextConfig),
-      sentryWebpackPluginOptions
-    )
-  : withBundleAnalyzer(nextConfig);
+// Export with optional bundle analyzer
+module.exports = withBundleAnalyzer(nextConfig);
