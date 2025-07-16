@@ -63,11 +63,14 @@ jobs:
 
       - name: Install dependencies
         run: |
+          echo "Node version: $(node --version)"
+          echo "NPM version: $(npm --version)"
           if [ ! -f package-lock.json ]; then
             echo "No package-lock.json found, generating..."
             npm install
           else
-            npm ci --prefer-offline
+            echo "Using npm ci with existing lock file"
+            npm ci --prefer-offline || (echo "npm ci failed, trying npm install" && npm install)
           fi
 
       - name: Run ESLint
