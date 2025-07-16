@@ -26,7 +26,7 @@
     "check:bundle": "node scripts/check-bundle-size.js",
     "check:arabic": "node scripts/check-arabic-typography.js",
     "percy": "percy snapshot ./out",
-    "prepare": "husky install",
+    "prepare": "node -e \"if (!process.env.CI) { require('child_process').execSync('husky install', {stdio: 'inherit'}); }\" || true",
     "pre-commit": "lint-staged",
     "validate": "npm run type-check && npm run lint && npm run test && npm run check:bundle",
     "test:unit": "vitest run",

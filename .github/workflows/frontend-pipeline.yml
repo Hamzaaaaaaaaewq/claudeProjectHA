@@ -18,6 +18,7 @@ on:
 
 env:
   NODE_VERSION: '18.x'
+  CI: true
   PERCY_PARALLEL_NONCE: ${{ github.run_id }}-${{ github.run_number }}
   PERCY_PARALLEL_TOTAL: 3
 

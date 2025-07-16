@@ -8,6 +8,7 @@ on:
 
 env:
   MIN_COVERAGE: 85
+  CI: true
   NODE_VERSION: '20'
   
 jobs:
