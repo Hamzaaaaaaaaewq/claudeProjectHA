@@ -1,4 +1,5 @@
 # SyriaMart - Syrian E-Commerce Platform
+<!-- CI/CD verification in progress -->
 
 [![CI/CD Status](https://github.com/[your-username]/syriamart/actions/workflows/main-pipeline.yml/badge.svg)](https://github.com/[your-username]/syriamart/actions/workflows/main-pipeline.yml)
 [![Security Scan](https://github.com/[your-username]/syriamart/actions/workflows/security.yml/badge.svg)](https://github.com/[your-username]/syriamart/actions/workflows/security.yml)
