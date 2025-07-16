@@ -204,7 +204,7 @@ jobs:
           NEXT_PUBLIC_API_URL: http://localhost:3001
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: frontend-build
           path: frontend/.next/
@@ -286,7 +286,7 @@ jobs:
           echo "- [x] Security policies documented" >> compliance-report.md
 
       - name: Upload compliance report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: compliance-report
           path: compliance-report.md
