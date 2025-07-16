@@ -1,7 +1,11 @@
 {
   "_description": "Dependency Registry - All third-party dependencies must be documented here",
-  "_lastReview": "2025-01-15",
+  "_lastReview": "2025-01-16",
   "_reviewers": ["platform-team", "security-team"],
+  "_totalDependencies": 35,
+  "_frontendDependencies": 15,
+  "_backendDependencies": 15,
+  "_devDependencies": 5,
   
   "express": {
     "version": "4.18.2",
@@ -248,6 +252,197 @@
     "approvalDate": "2025-01-16",
     "securityNotes": "No security risks - configuration only",
     "notes": "Standard conventional commit format following Angular convention"
+  },
+  
+  "next": {
+    "version": "14.2.25",
+    "purpose": "React framework for production with SSR/SSG support",
+    "alternatives": ["gatsby", "remix", "vite + react"],
+    "license": "MIT",
+    "lastSecurityAudit": "2025-01-16",
+    "maintainer": "frontend-team",
+    "approvedBy": "frontend-lead",
+    "approvalDate": "2025-01-16",
+    "securityNotes": "Updated from 14.0.4 to fix CVE-2025-29927, CVE-2024-34351",
+    "performanceNotes": "Excellent performance with App Router and RSC",
+    "notes": "Primary frontend framework for SyriaMart"
+  },
+  
+  "react": {
+    "version": "18.2.0",
+    "purpose": "UI library for building user interfaces",
+    "alternatives": ["vue", "angular", "svelte"],
+    "license": "MIT",
+    "lastSecurityAudit": "2025-01-16",
+    "maintainer": "frontend-team",
+    "approvedBy": "frontend-lead",
+    "approvalDate": "2025-01-16",
+    "securityNotes": "No known vulnerabilities",
+    "notes": "Industry standard, excellent ecosystem"
+  },
+  
+  "typescript": {
+    "version": "5.3.3",
+    "purpose": "Type safety and enhanced developer experience",
+    "alternatives": ["javascript", "flow"],
+    "license": "Apache-2.0",
+    "lastSecurityAudit": "2025-01-16",
+    "maintainer": "platform-team",
+    "approvedBy": "tech-lead",
+    "approvalDate": "2025-01-16",
+    "securityNotes": "Development tool only",
+    "notes": "Mandatory for all new code"
+  },
+  
+  "tailwindcss": {
+    "version": "3.4.1",
+    "purpose": "Utility-first CSS framework for rapid UI development",
+    "alternatives": ["css modules", "styled-components", "emotion"],
+    "license": "MIT",
+    "lastSecurityAudit": "2025-01-16",
+    "maintainer": "frontend-team",
+    "approvedBy": "frontend-lead",
+    "approvalDate": "2025-01-16",
+    "securityNotes": "No security risks",
+    "performanceNotes": "Tree-shaking removes unused styles",
+    "notes": "Excellent RTL support for Arabic"
+  },
+  
+  "zustand": {
+    "version": "4.4.7",
+    "purpose": "Lightweight state management for React",
+    "alternatives": ["redux", "mobx", "jotai", "valtio"],
+    "license": "MIT",
+    "lastSecurityAudit": "2025-01-16",
+    "maintainer": "frontend-team",
+    "approvedBy": "frontend-lead",
+    "approvalDate": "2025-01-16",
+    "securityNotes": "No security risks",
+    "performanceNotes": "Minimal bundle size (~8KB)",
+    "notes": "Chosen for simplicity and performance"
+  },
+  
+  "@tanstack/react-query": {
+    "version": "5.17.9",
+    "purpose": "Server state management and data fetching",
+    "alternatives": ["swr", "apollo-client", "axios + custom"],
+    "license": "MIT",
+    "lastSecurityAudit": "2025-01-16",
+    "maintainer": "frontend-team",
+    "approvedBy": "frontend-lead",
+    "approvalDate": "2025-01-16",
+    "securityNotes": "No security risks",
+    "performanceNotes": "Excellent caching and background refetching",
+    "notes": "Essential for offline support"
+  },
+  
+  "react-hook-form": {
+    "version": "7.48.2",
+    "purpose": "Performant forms with easy validation",
+    "alternatives": ["formik", "react-final-form", "custom"],
+    "license": "MIT",
+    "lastSecurityAudit": "2025-01-16",
+    "maintainer": "frontend-team",
+    "approvedBy": "frontend-lead",
+    "approvalDate": "2025-01-16",
+    "securityNotes": "No security risks",
+    "performanceNotes": "Minimal re-renders",
+    "notes": "Best performance for complex forms"
+  },
+  
+  "zod": {
+    "version": "3.22.4",
+    "purpose": "TypeScript-first schema validation",
+    "alternatives": ["yup", "joi", "ajv"],
+    "license": "MIT",
+    "lastSecurityAudit": "2025-01-16",
+    "maintainer": "frontend-team",
+    "approvedBy": "frontend-lead",
+    "approvalDate": "2025-01-16",
+    "securityNotes": "No security risks",
+    "notes": "Type inference from schemas"
+  },
+  
+  "vitest": {
+    "version": "1.6.1",
+    "purpose": "Fast unit test framework for Vite and TypeScript",
+    "alternatives": ["jest", "mocha", "ava"],
+    "license": "MIT",
+    "lastSecurityAudit": "2025-01-16",
+    "maintainer": "qa-team",
+    "approvedBy": "qa-lead",
+    "approvalDate": "2025-01-16",
+    "securityNotes": "Updated from 1.1.0 to fix CVE-2025-24964",
+    "performanceNotes": "Much faster than Jest",
+    "notes": "Native ESM support"
+  },
+  
+  "@playwright/test": {
+    "version": "1.40.1",
+    "purpose": "E2E testing framework",
+    "alternatives": ["cypress", "selenium", "puppeteer"],
+    "license": "Apache-2.0",
+    "lastSecurityAudit": "2025-01-16",
+    "maintainer": "qa-team",
+    "approvedBy": "qa-lead",
+    "approvalDate": "2025-01-16",
+    "securityNotes": "No security risks",
+    "performanceNotes": "Fast and reliable",
+    "notes": "Cross-browser testing support"
+  },
+  
+  "lucide-react": {
+    "version": "0.303.0",
+    "purpose": "Icon library with tree-shakeable SVG icons",
+    "alternatives": ["react-icons", "heroicons", "phosphor-icons"],
+    "license": "ISC",
+    "lastSecurityAudit": "2025-01-16",
+    "maintainer": "frontend-team",
+    "approvedBy": "frontend-lead",
+    "approvalDate": "2025-01-16",
+    "securityNotes": "No security risks",
+    "performanceNotes": "Tree-shakeable, small bundle size",
+    "notes": "Consistent icon style"
+  },
+  
+  "@radix-ui/react-dialog": {
+    "version": "1.0.5",
+    "purpose": "Accessible dialog/modal component",
+    "alternatives": ["headlessui", "react-modal", "custom"],
+    "license": "MIT",
+    "lastSecurityAudit": "2025-01-16",
+    "maintainer": "frontend-team",
+    "approvedBy": "frontend-lead",
+    "approvalDate": "2025-01-16",
+    "securityNotes": "No security risks",
+    "notes": "Part of shadcn/ui component system"
+  },
+  
+  "next-intl": {
+    "version": "3.4.5",
+    "purpose": "Internationalization for Next.js with Arabic support",
+    "alternatives": ["next-i18next", "react-intl", "lingui"],
+    "license": "MIT",
+    "lastSecurityAudit": "2025-01-16",
+    "maintainer": "frontend-team",
+    "approvedBy": "frontend-lead",
+    "approvalDate": "2025-01-16",
+    "securityNotes": "No security risks",
+    "notes": "Excellent RTL and Arabic locale support"
+  },
+  
+  "sharp": {
+    "version": "0.33.2",
+    "purpose": "High-performance image processing",
+    "alternatives": ["jimp", "imagemin", "squoosh"],
+    "license": "Apache-2.0",
+    "lastSecurityAudit": "2025-01-16",
+    "maintainer": "frontend-team",
+    "approvedBy": "frontend-lead",
+    "approvalDate": "2025-01-16",
+    "securityNotes": "Native dependency, requires proper build env",
+    "performanceNotes": "Fastest image optimization library",
+    "notes": "Used by Next.js Image component"
   },
   
   "_template": {

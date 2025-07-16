@@ -4,6 +4,10 @@
 
 The SyriaMart frontend is a modern, mobile-first Progressive Web Application (PWA) built with performance and accessibility in mind. It's specifically optimized for the Syrian market, with support for Arabic (RTL), low-bandwidth connections, and offline capabilities.
 
+**Build Status**: ![Frontend Tests](https://github.com/Hamzaaaaaaaaewq/claudeProjectHA/actions/workflows/frontend-pipeline.yml/badge.svg)  
+**Tech Stack**: Next.js 14, TypeScript, Tailwind CSS, Zustand  
+**Testing**: 85%+ coverage requirement with Vitest, Playwright
+
 ## Technology Stack
 
 - **Framework**: Next.js 14+ with App Router
@@ -46,51 +50,70 @@ npm run dev
 
 ```bash
 # Development
-npm run dev              # Start development server
+npm run dev              # Start development server (http://localhost:3000)
 npm run build           # Build for production
 npm run start           # Start production server
+npm run storybook       # Component development (http://localhost:6006)
 
 # Testing
 npm run test            # Run unit tests
 npm run test:watch      # Run tests in watch mode
 npm run test:coverage   # Generate coverage report
-npm run e2e             # Run E2E tests
+npm run test:unit       # Run unit tests only
+npm run test:integration # Run integration tests
+npm run test:rtl        # Run RTL-specific tests
+npm run test:a11y       # Run accessibility tests
+npm run e2e             # Run E2E tests with Playwright
 npm run e2e:ui          # Run E2E tests with UI
+npm run e2e:debug       # Debug E2E tests
 
 # Code Quality
 npm run lint            # Run ESLint
 npm run lint:fix        # Fix linting issues
 npm run type-check      # Run TypeScript compiler
 npm run format          # Format code with Prettier
+npm run format:check    # Check formatting
+npm run validate        # Run all checks (type, lint, test, bundle)
 
-# Performance
+# Performance & Quality
 npm run lighthouse      # Run Lighthouse CI
 npm run bundle-analyze  # Analyze bundle size
+npm run check:bundle    # Check bundle size limits
+npm run check:arabic    # Validate Arabic typography
+npm run percy          # Run visual regression tests
+
+# Git Hooks
+npm run pre-commit      # Run pre-commit checks
+npm run prepare         # Setup Husky hooks
 ```
 
 ## Project Structure
 
 ```
 frontend/
-├── app/                    # Next.js App Router pages
-│   ├── (auth)/            # Authentication pages
-│   ├── (shop)/            # Main shopping pages
-│   ├── api/               # API routes
-│   └── layout.tsx         # Root layout
-├── components/            # Reusable components
-│   ├── ui/               # Base UI components
-│   ├── features/         # Feature-specific components
-│   └── layouts/          # Layout components
-├── lib/                  # Utility functions and configs
-├── hooks/               # Custom React hooks
-├── stores/              # Zustand stores
-├── styles/              # Global styles and Tailwind config
-├── public/              # Static assets
-├── tests/               # Test files
-│   ├── unit/           # Unit tests
-│   ├── integration/    # Integration tests
-│   └── e2e/           # End-to-end tests
-└── scripts/            # Build and deployment scripts
+├── src/
+│   ├── app/                    # Next.js App Router pages
+│   │   ├── (auth)/            # Authentication pages
+│   │   ├── (shop)/            # Main shopping pages  
+│   │   ├── api/               # API routes
+│   │   └── layout.tsx         # Root layout with providers
+│   ├── components/            # Reusable components
+│   │   ├── ui/               # Base UI components (shadcn/ui)
+│   │   ├── features/         # Feature-specific components
+│   │   └── layouts/          # Layout components
+│   ├── lib/                  # Utility functions and configs
+│   ├── hooks/               # Custom React hooks
+│   ├── stores/              # Zustand state management
+│   ├── styles/              # Global styles and themes
+│   ├── types/               # TypeScript type definitions
+│   └── test/                # Test setup and utilities
+├── public/                  # Static assets
+├── tests/                   # Test files
+│   ├── unit/               # Unit tests
+│   ├── integration/        # Integration tests  
+│   └── e2e/               # Playwright E2E tests
+├── scripts/                # Build, check, and utility scripts
+└── .storybook/            # Storybook configuration
 ```
 
 ## Development Guidelines
