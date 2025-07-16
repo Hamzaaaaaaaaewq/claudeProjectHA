@@ -1,0 +1,620 @@
+openapi: 3.0.3
+info:
+  title: SyriaMart Payment Service API
+  version: 1.0.0
+  description: |
+    Payment processing service for SyriaMart platform.
+    
+    This service handles:
+    - Payment initiation and processing
+    - Integration with Syrian payment providers (SEP, Syriatel Cash, MTN Pay)
+    - Wallet management
+    - Transaction history
+    - Refund processing
+  contact:
+    name: SyriaMart API Support
+    email: api-support@syriamart.com
+  license:
+    name: Proprietary
+    
+servers:
+  - url: https://api.syriamart.com/api/v1
+    description: Production server
+  - url: https://staging-api.syriamart.com/api/v1
+    description: Staging server
+  - url: http://localhost:3004/api/v1
+    description: Development server
+
+tags:
+  - name: Payments
+    description: Payment processing endpoints
+  - name: Wallets
+    description: Wallet management endpoints
+  - name: Transactions
+    description: Transaction history endpoints
+  - name: Refunds
+    description: Refund processing endpoints
+
+paths:
+  /payments/initiate:
+    post:
+      tags:
+        - Payments
+      summary: Initiate a payment
+      description: |
+        Initiates a payment for an order. Supports multiple payment methods including
+        COD, Syriatel Cash, MTN Pay, and credit cards.
+      operationId: initiatePayment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InitiatePaymentRequest'
+            examples:
+              syriatelCash:
+                summary: Syriatel Cash payment
+                value:
+                  orderId: "ORD-2025-00001"
+                  amount: 50000
+                  currency: "SYP"
+                  method: "syriatel_cash"
+                  phoneNumber: "+963991234567"
+              mtnPay:
+                summary: MTN Pay payment
+                value:
+                  orderId: "ORD-2025-00002"
+                  amount: 75000
+                  currency: "SYP"
+                  method: "mtn_pay"
+                  phoneNumber: "+963981234567"
+      responses:
+        '200':
+          description: Payment initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /payments/{paymentId}/confirm:
+    post:
+      tags:
+        - Payments
+      summary: Confirm a payment
+      description: Confirms a payment with OTP or other verification method
+      operationId: confirmPayment
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PaymentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmPaymentRequest'
+      responses:
+        '200':
+          description: Payment confirmed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /payments/{paymentId}:
+    get:
+      tags:
+        - Payments
+      summary: Get payment details
+      description: Retrieves details of a specific payment
+      operationId: getPayment
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PaymentId'
+      responses:
+        '200':
+          description: Payment details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /payments/{paymentId}/refund:
+    post:
+      tags:
+        - Refunds
+      summary: Refund a payment
+      description: Initiates a full or partial refund for a payment
+      operationId: refundPayment
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PaymentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefundRequest'
+      responses:
+        '200':
+          description: Refund initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefundResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /wallets/balance:
+    get:
+      tags:
+        - Wallets
+      summary: Get wallet balance
+      description: Retrieves the current wallet balance for the authenticated user
+      operationId: getWalletBalance
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Wallet balance retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletBalance'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /wallets/topup:
+    post:
+      tags:
+        - Wallets
+      summary: Top up wallet
+      description: Adds funds to user's wallet
+      operationId: topUpWallet
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TopUpRequest'
+      responses:
+        '200':
+          description: Wallet topped up successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopUpResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /transactions:
+    get:
+      tags:
+        - Transactions
+      summary: Get transaction history
+      description: Retrieves paginated transaction history for the authenticated user
+      operationId: getTransactions
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/StartDate'
+        - $ref: '#/components/parameters/EndDate'
+        - name: type
+          in: query
+          description: Filter by transaction type
+          schema:
+            type: string
+            enum: [payment, refund, topup, withdrawal]
+      responses:
+        '200':
+          description: Transaction history retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      transactions:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Transaction'
+                  meta:
+                    allOf:
+                      - $ref: '../common/schemas.yaml#/components/schemas/ResponseMeta'
+                      - type: object
+                        properties:
+                          pagination:
+                            $ref: '../common/schemas.yaml#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /payment-methods:
+    get:
+      tags:
+        - Payments
+      summary: Get available payment methods
+      description: Returns list of available payment methods for the user
+      operationId: getPaymentMethods
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Payment methods retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      methods:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PaymentMethod'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    PaymentId:
+      name: paymentId
+      in: path
+      required: true
+      description: Payment ID
+      schema:
+        $ref: '../common/schemas.yaml#/components/schemas/UUID'
+    
+    Page:
+      name: page
+      in: query
+      description: Page number
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    
+    Limit:
+      name: limit
+      in: query
+      description: Items per page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    
+    StartDate:
+      name: startDate
+      in: query
+      description: Start date for filtering
+      schema:
+        type: string
+        format: date
+        
+    EndDate:
+      name: endDate
+      in: query
+      description: End date for filtering
+      schema:
+        type: string
+        format: date
+
+  schemas:
+    InitiatePaymentRequest:
+      type: object
+      required:
+        - orderId
+        - amount
+        - currency
+        - method
+      properties:
+        orderId:
+          $ref: '../common/schemas.yaml#/components/schemas/UUID'
+        amount:
+          type: number
+          minimum: 0.01
+          example: 50000
+        currency:
+          type: string
+          enum: [SYP, USD]
+          default: SYP
+        method:
+          type: string
+          enum: [cod, syriatel_cash, mtn_pay, credit_card, wallet]
+        phoneNumber:
+          type: string
+          pattern: '^\+963[0-9]{9}$'
+          description: Required for mobile payment methods
+        returnUrl:
+          type: string
+          format: uri
+          description: URL to redirect after payment
+        metadata:
+          type: object
+          additionalProperties: true
+
+    ConfirmPaymentRequest:
+      type: object
+      required:
+        - verificationCode
+      properties:
+        verificationCode:
+          type: string
+          pattern: '^[0-9]{6}$'
+          description: OTP verification code
+
+    PaymentResponse:
+      type: object
+      properties:
+        id:
+          $ref: '../common/schemas.yaml#/components/schemas/UUID'
+        orderId:
+          $ref: '../common/schemas.yaml#/components/schemas/UUID'
+        amount:
+          type: number
+        currency:
+          type: string
+        method:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed, cancelled, refunded]
+        transactionId:
+          type: string
+          description: External transaction reference
+        createdAt:
+          $ref: '../common/schemas.yaml#/components/schemas/DateTime'
+        completedAt:
+          $ref: '../common/schemas.yaml#/components/schemas/DateTime'
+        failureReason:
+          type: string
+        redirectUrl:
+          type: string
+          format: uri
+          description: URL for payment completion (if applicable)
+
+    RefundRequest:
+      type: object
+      required:
+        - amount
+        - reason
+      properties:
+        amount:
+          type: number
+          minimum: 0.01
+          description: Amount to refund (partial or full)
+        reason:
+          type: string
+          enum: [customer_request, order_cancelled, damaged_product, wrong_product, other]
+        description:
+          type: string
+          maxLength: 500
+
+    RefundResponse:
+      type: object
+      properties:
+        id:
+          $ref: '../common/schemas.yaml#/components/schemas/UUID'
+        paymentId:
+          $ref: '../common/schemas.yaml#/components/schemas/UUID'
+        amount:
+          type: number
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        reason:
+          type: string
+        processedAt:
+          $ref: '../common/schemas.yaml#/components/schemas/DateTime'
+
+    WalletBalance:
+      type: object
+      properties:
+        balance:
+          type: number
+          example: 150000
+        currency:
+          type: string
+          default: SYP
+        lastUpdated:
+          $ref: '../common/schemas.yaml#/components/schemas/DateTime'
+
+    TopUpRequest:
+      type: object
+      required:
+        - amount
+        - method
+      properties:
+        amount:
+          type: number
+          minimum: 1000
+          description: Minimum top-up 1000 SYP
+        method:
+          type: string
+          enum: [syriatel_cash, mtn_pay, bank_transfer]
+        phoneNumber:
+          type: string
+          pattern: '^\+963[0-9]{9}$'
+
+    TopUpResponse:
+      type: object
+      properties:
+        transactionId:
+          $ref: '../common/schemas.yaml#/components/schemas/UUID'
+        amount:
+          type: number
+        newBalance:
+          type: number
+        status:
+          type: string
+          enum: [pending, completed, failed]
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          $ref: '../common/schemas.yaml#/components/schemas/UUID'
+        type:
+          type: string
+          enum: [payment, refund, topup, withdrawal]
+        amount:
+          type: number
+        currency:
+          type: string
+        description:
+          type: string
+        reference:
+          type: string
+        status:
+          type: string
+          enum: [pending, completed, failed]
+        createdAt:
+          $ref: '../common/schemas.yaml#/components/schemas/DateTime'
+
+    PaymentMethod:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [mobile_money, card, wallet, cash]
+        icon:
+          type: string
+          format: uri
+        isAvailable:
+          type: boolean
+        minimumAmount:
+          type: number
+        maximumAmount:
+          type: number
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '../common/schemas.yaml#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "INVALID_REQUEST"
+              message: "Invalid payment amount"
+              
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '../common/schemas.yaml#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "UNAUTHORIZED"
+              message: "Invalid or expired token"
+              
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '../common/schemas.yaml#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "NOT_FOUND"
+              message: "Payment not found"
+              
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '../common/schemas.yaml#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "PAYMENT_EXISTS"
+              message: "Payment already exists for this order"
+              
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '../common/schemas.yaml#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "VALIDATION_ERROR"
+              message: "Validation failed"
+              details:
+                phoneNumber: "Invalid Syrian phone number format"
+                
+    ServerError:
+      description: Server error
+      content:
+        application/json:
+          schema:
+            $ref: '../common/schemas.yaml#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "INTERNAL_ERROR"
+              message: "An internal error occurred"

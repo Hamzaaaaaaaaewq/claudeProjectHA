@@ -1,0 +1,994 @@
+openapi: 3.0.3
+info:
+  title: SyriaMart User Service API
+  version: 1.0.0
+  description: |
+    User management and authentication service for SyriaMart platform.
+    
+    This service handles:
+    - User registration and authentication
+    - Profile management
+    - Role-based access control
+    - Password management
+    - Session management
+  contact:
+    name: SyriaMart API Support
+    email: api-support@syriamart.com
+  license:
+    name: Proprietary
+    
+servers:
+  - url: https://api.syriamart.com/api/v1
+    description: Production server
+  - url: https://staging-api.syriamart.com/api/v1
+    description: Staging server
+  - url: http://localhost:3001/api/v1
+    description: Development server
+
+tags:
+  - name: Authentication
+    description: Authentication endpoints
+  - name: Users
+    description: User management endpoints
+  - name: Profile
+    description: User profile endpoints
+  - name: Admin
+    description: Admin-only endpoints
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: Create a new user account with email and password
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - firstName
+                - lastName
+                - phoneNumber
+              properties:
+                email:
+                  $ref: '../common/schemas.yaml#/components/schemas/Email'
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  pattern: ^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$
+                  description: Must contain uppercase, lowercase, number and special character
+                firstName:
+                  type: string
+                  minLength: 2
+                  maxLength: 50
+                lastName:
+                  type: string
+                  minLength: 2
+                  maxLength: 50
+                phoneNumber:
+                  $ref: '../common/schemas.yaml#/components/schemas/PhoneNumber'
+                acceptTerms:
+                  type: boolean
+                  description: User must accept terms and conditions
+                marketingConsent:
+                  type: boolean
+                  default: false
+      responses:
+        '201':
+          description: User successfully registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '../common/schemas.yaml#/components/schemas/User'
+                      tokens:
+                        $ref: '#/components/schemas/AuthTokens'
+                  meta:
+                    $ref: '../common/schemas.yaml#/components/schemas/ResponseMeta'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      description: Authenticate user with email and password
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  $ref: '../common/schemas.yaml#/components/schemas/Email'
+                password:
+                  type: string
+                  format: password
+                rememberMe:
+                  type: boolean
+                  default: false
+                  description: Extend session duration
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '../common/schemas.yaml#/components/schemas/User'
+                      tokens:
+                        $ref: '#/components/schemas/AuthTokens'
+                  meta:
+                    $ref: '../common/schemas.yaml#/components/schemas/ResponseMeta'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout user
+      description: Invalidate user session and tokens
+      operationId: logoutUser
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Logout successful
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: Get new access token using refresh token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+                  format: jwt
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      tokens:
+                        $ref: '#/components/schemas/AuthTokens'
+                  meta:
+                    $ref: '../common/schemas.yaml#/components/schemas/ResponseMeta'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/forgot-password:
+    post:
+      tags:
+        - Authentication
+      summary: Request password reset
+      description: Send password reset link to user's email
+      operationId: forgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  $ref: '../common/schemas.yaml#/components/schemas/Email'
+      responses:
+        '200':
+          description: Password reset email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Password reset instructions sent to your email"
+                  meta:
+                    $ref: '../common/schemas.yaml#/components/schemas/ResponseMeta'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /auth/reset-password:
+    post:
+      tags:
+        - Authentication
+      summary: Reset password
+      description: Reset user password using token from email
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - password
+              properties:
+                token:
+                  type: string
+                  description: Reset token from email
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  pattern: ^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$
+      responses:
+        '200':
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Password reset successful"
+                  meta:
+                    $ref: '../common/schemas.yaml#/components/schemas/ResponseMeta'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/verify-email:
+    post:
+      tags:
+        - Authentication
+      summary: Verify email address
+      description: Verify user's email address using token
+      operationId: verifyEmail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+                  description: Verification token from email
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Email verified successfully"
+                  meta:
+                    $ref: '../common/schemas.yaml#/components/schemas/ResponseMeta'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /users/profile:
+    get:
+      tags:
+        - Profile
+      summary: Get current user profile
+      description: Retrieve the authenticated user's profile information
+      operationId: getUserProfile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '../common/schemas.yaml#/components/schemas/User'
+                      addresses:
+                        type: array
+                        items:
+                          $ref: '../common/schemas.yaml#/components/schemas/Address'
+                      preferences:
+                        $ref: '#/components/schemas/UserPreferences'
+                  meta:
+                    $ref: '../common/schemas.yaml#/components/schemas/ResponseMeta'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags:
+        - Profile
+      summary: Update user profile
+      description: Update the authenticated user's profile information
+      operationId: updateUserProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                  minLength: 2
+                  maxLength: 50
+                lastName:
+                  type: string
+                  minLength: 2
+                  maxLength: 50
+                phoneNumber:
+                  $ref: '../common/schemas.yaml#/components/schemas/PhoneNumber'
+                dateOfBirth:
+                  type: string
+                  format: date
+                gender:
+                  type: string
+                  enum: [male, female, other]
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '../common/schemas.yaml#/components/schemas/User'
+                  meta:
+                    $ref: '../common/schemas.yaml#/components/schemas/ResponseMeta'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /users/change-password:
+    post:
+      tags:
+        - Profile
+      summary: Change password
+      description: Change the authenticated user's password
+      operationId: changePassword
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currentPassword
+                - newPassword
+              properties:
+                currentPassword:
+                  type: string
+                  format: password
+                newPassword:
+                  type: string
+                  format: password
+                  minLength: 8
+                  pattern: ^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Password changed successfully"
+                  meta:
+                    $ref: '../common/schemas.yaml#/components/schemas/ResponseMeta'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /users/addresses:
+    get:
+      tags:
+        - Profile
+      summary: Get user addresses
+      description: Retrieve all addresses for the authenticated user
+      operationId: getUserAddresses
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Addresses retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      addresses:
+                        type: array
+                        items:
+                          $ref: '../common/schemas.yaml#/components/schemas/Address'
+                  meta:
+                    $ref: '../common/schemas.yaml#/components/schemas/ResponseMeta'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Profile
+      summary: Add new address
+      description: Add a new address for the authenticated user
+      operationId: addUserAddress
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../common/schemas.yaml#/components/schemas/Address'
+      responses:
+        '201':
+          description: Address added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      address:
+                        $ref: '../common/schemas.yaml#/components/schemas/Address'
+                  meta:
+                    $ref: '../common/schemas.yaml#/components/schemas/ResponseMeta'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /users/addresses/{addressId}:
+    put:
+      tags:
+        - Profile
+      summary: Update address
+      description: Update an existing address
+      operationId: updateUserAddress
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AddressId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../common/schemas.yaml#/components/schemas/Address'
+      responses:
+        '200':
+          description: Address updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      address:
+                        $ref: '../common/schemas.yaml#/components/schemas/Address'
+                  meta:
+                    $ref: '../common/schemas.yaml#/components/schemas/ResponseMeta'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+    delete:
+      tags:
+        - Profile
+      summary: Delete address
+      description: Delete an address
+      operationId: deleteUserAddress
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AddressId'
+      responses:
+        '204':
+          description: Address deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /users:
+    get:
+      tags:
+        - Admin
+      summary: List all users
+      description: Get paginated list of all users (admin only)
+      operationId: listUsers
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Sort'
+        - name: role
+          in: query
+          description: Filter by user role
+          schema:
+            type: string
+            enum: [customer, vendor, admin]
+        - name: status
+          in: query
+          description: Filter by account status
+          schema:
+            type: string
+            enum: [active, inactive, suspended]
+        - name: search
+          in: query
+          description: Search by name or email
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      users:
+                        type: array
+                        items:
+                          $ref: '../common/schemas.yaml#/components/schemas/User'
+                  meta:
+                    allOf:
+                      - $ref: '../common/schemas.yaml#/components/schemas/ResponseMeta'
+                      - type: object
+                        properties:
+                          pagination:
+                            $ref: '../common/schemas.yaml#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /users/{userId}:
+    get:
+      tags:
+        - Admin
+      summary: Get user by ID
+      description: Get specific user details (admin only)
+      operationId: getUserById
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: User retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '../common/schemas.yaml#/components/schemas/User'
+                  meta:
+                    $ref: '../common/schemas.yaml#/components/schemas/ResponseMeta'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Admin
+      summary: Update user
+      description: Update user details (admin only)
+      operationId: updateUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  type: string
+                  enum: [customer, vendor, admin]
+                isActive:
+                  type: boolean
+                emailVerified:
+                  type: boolean
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '../common/schemas.yaml#/components/schemas/User'
+                  meta:
+                    $ref: '../common/schemas.yaml#/components/schemas/ResponseMeta'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      description: User ID
+      schema:
+        $ref: '../common/schemas.yaml#/components/schemas/UUID'
+    
+    AddressId:
+      name: addressId
+      in: path
+      required: true
+      description: Address ID
+      schema:
+        $ref: '../common/schemas.yaml#/components/schemas/UUID'
+    
+    Page:
+      name: page
+      in: query
+      description: Page number
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    
+    Limit:
+      name: limit
+      in: query
+      description: Items per page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    
+    Sort:
+      name: sort
+      in: query
+      description: Sort field and order (e.g., createdAt:desc)
+      schema:
+        type: string
+        pattern: ^[a-zA-Z]+:(asc|desc)$
+        default: createdAt:desc
+
+  schemas:
+    AuthTokens:
+      type: object
+      required:
+        - accessToken
+        - refreshToken
+        - expiresIn
+      properties:
+        accessToken:
+          type: string
+          format: jwt
+          description: JWT access token
+        refreshToken:
+          type: string
+          format: jwt
+          description: JWT refresh token
+        tokenType:
+          type: string
+          default: Bearer
+        expiresIn:
+          type: integer
+          description: Access token expiry in seconds
+          example: 900
+
+    UserPreferences:
+      type: object
+      properties:
+        language:
+          type: string
+          enum: [ar, en]
+          default: ar
+        currency:
+          type: string
+          enum: [SYP, USD, EUR]
+          default: SYP
+        notifications:
+          type: object
+          properties:
+            email:
+              type: boolean
+              default: true
+            sms:
+              type: boolean
+              default: true
+            push:
+              type: boolean
+              default: true
+        marketing:
+          type: object
+          properties:
+            email:
+              type: boolean
+              default: false
+            sms:
+              type: boolean
+              default: false
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '../common/schemas.yaml#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "BAD_REQUEST"
+              message: "Invalid request data"
+              timestamp: "2025-01-15T10:00:00Z"
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '../common/schemas.yaml#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "UNAUTHORIZED"
+              message: "Invalid or expired authentication token"
+              timestamp: "2025-01-15T10:00:00Z"
+
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '../common/schemas.yaml#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "FORBIDDEN"
+              message: "Insufficient permissions to perform this action"
+              timestamp: "2025-01-15T10:00:00Z"
+
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '../common/schemas.yaml#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "NOT_FOUND"
+              message: "The requested resource was not found"
+              timestamp: "2025-01-15T10:00:00Z"
+
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '../common/schemas.yaml#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "CONFLICT"
+              message: "Email already exists"
+              timestamp: "2025-01-15T10:00:00Z"
+
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '../common/schemas.yaml#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "VALIDATION_ERROR"
+              message: "Validation failed"
+              details:
+                fields:
+                  email: "Invalid email format"
+                  password: "Password must be at least 8 characters"
+              timestamp: "2025-01-15T10:00:00Z"
+
+    TooManyRequests:
+      description: Too many requests
+      content:
+        application/json:
+          schema:
+            $ref: '../common/schemas.yaml#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "RATE_LIMIT_EXCEEDED"
+              message: "Too many requests. Please try again later."
+              timestamp: "2025-01-15T10:00:00Z"
+      headers:
+        X-RateLimit-Limit:
+          description: Request limit per hour
+          schema:
+            type: integer
+            example: 100
+        X-RateLimit-Remaining:
+          description: Remaining requests
+          schema:
+            type: integer
+            example: 0
+        X-RateLimit-Reset:
+          description: Reset timestamp
+          schema:
+            type: integer
+            example: 1642248000

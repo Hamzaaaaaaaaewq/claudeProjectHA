@@ -1,0 +1,607 @@
+openapi: 3.0.3
+info:
+  title: SyriaMart Common Schemas
+  version: 1.0.0
+  description: Common data models shared across SyriaMart services
+
+components:
+  schemas:
+    # Base Schemas
+    UUID:
+      type: string
+      format: uuid
+      example: "550e8400-e29b-41d4-a716-446655440000"
+    
+    Email:
+      type: string
+      format: email
+      example: "user@example.com"
+    
+    DateTime:
+      type: string
+      format: date-time
+      example: "2025-01-15T10:00:00Z"
+    
+    Money:
+      type: object
+      required:
+        - amount
+        - currency
+      properties:
+        amount:
+          type: number
+          format: double
+          example: 100.50
+        currency:
+          type: string
+          enum: [SYP, USD, EUR]
+          default: SYP
+          example: "SYP"
+    
+    Address:
+      type: object
+      required:
+        - street
+        - city
+        - country
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        street:
+          type: string
+          example: "123 Main Street"
+        city:
+          type: string
+          example: "Damascus"
+        state:
+          type: string
+          example: "Damascus Governorate"
+        postalCode:
+          type: string
+          example: "12345"
+        country:
+          type: string
+          example: "Syria"
+        isDefault:
+          type: boolean
+          default: false
+    
+    PhoneNumber:
+      type: object
+      required:
+        - countryCode
+        - number
+      properties:
+        countryCode:
+          type: string
+          example: "+963"
+        number:
+          type: string
+          example: "991234567"
+        type:
+          type: string
+          enum: [mobile, home, work]
+          default: mobile
+    
+    # User Related
+    User:
+      type: object
+      required:
+        - id
+        - email
+        - firstName
+        - lastName
+        - role
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        email:
+          $ref: '#/components/schemas/Email'
+        firstName:
+          type: string
+          example: "أحمد"
+        lastName:
+          type: string
+          example: "محمد"
+        phoneNumber:
+          $ref: '#/components/schemas/PhoneNumber'
+        role:
+          type: string
+          enum: [customer, vendor, admin]
+          default: customer
+        isActive:
+          type: boolean
+          default: true
+        emailVerified:
+          type: boolean
+          default: false
+        createdAt:
+          $ref: '#/components/schemas/DateTime'
+        updatedAt:
+          $ref: '#/components/schemas/DateTime'
+    
+    # Product Related
+    Product:
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - price
+        - vendorId
+        - categoryId
+        - status
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        sku:
+          type: string
+          example: "PROD-12345"
+        name:
+          type: string
+          example: "Samsung Galaxy S24"
+        nameAr:
+          type: string
+          example: "سامسونج جالاكسي اس 24"
+        description:
+          type: string
+        descriptionAr:
+          type: string
+        price:
+          $ref: '#/components/schemas/Money'
+        compareAtPrice:
+          $ref: '#/components/schemas/Money'
+        vendorId:
+          $ref: '#/components/schemas/UUID'
+        categoryId:
+          $ref: '#/components/schemas/UUID'
+        brand:
+          type: string
+          example: "Samsung"
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductImage'
+        attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductAttribute'
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductVariant'
+        inventory:
+          $ref: '#/components/schemas/Inventory'
+        status:
+          type: string
+          enum: [active, inactive, out_of_stock]
+          default: active
+        tags:
+          type: array
+          items:
+            type: string
+        rating:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 5
+        reviewCount:
+          type: integer
+          minimum: 0
+        createdAt:
+          $ref: '#/components/schemas/DateTime'
+        updatedAt:
+          $ref: '#/components/schemas/DateTime'
+    
+    ProductImage:
+      type: object
+      required:
+        - url
+        - position
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        url:
+          type: string
+          format: uri
+          example: "https://cdn.syriamart.com/products/image1.jpg"
+        alt:
+          type: string
+        position:
+          type: integer
+          minimum: 0
+    
+    ProductAttribute:
+      type: object
+      required:
+        - name
+        - value
+      properties:
+        name:
+          type: string
+          example: "Color"
+        nameAr:
+          type: string
+          example: "اللون"
+        value:
+          type: string
+          example: "Black"
+        valueAr:
+          type: string
+          example: "أسود"
+    
+    ProductVariant:
+      type: object
+      required:
+        - id
+        - sku
+        - price
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        sku:
+          type: string
+        price:
+          $ref: '#/components/schemas/Money'
+        attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductAttribute'
+        inventory:
+          $ref: '#/components/schemas/Inventory'
+    
+    Inventory:
+      type: object
+      required:
+        - quantity
+        - trackInventory
+      properties:
+        quantity:
+          type: integer
+          minimum: 0
+        reservedQuantity:
+          type: integer
+          minimum: 0
+          default: 0
+        warehouseId:
+          $ref: '#/components/schemas/UUID'
+        trackInventory:
+          type: boolean
+          default: true
+        allowBackorder:
+          type: boolean
+          default: false
+    
+    Category:
+      type: object
+      required:
+        - id
+        - name
+        - slug
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+          example: "Electronics"
+        nameAr:
+          type: string
+          example: "إلكترونيات"
+        slug:
+          type: string
+          example: "electronics"
+        description:
+          type: string
+        parentId:
+          $ref: '#/components/schemas/UUID'
+        image:
+          type: string
+          format: uri
+        isActive:
+          type: boolean
+          default: true
+        position:
+          type: integer
+          minimum: 0
+    
+    # Order Related
+    Order:
+      type: object
+      required:
+        - id
+        - orderNumber
+        - userId
+        - status
+        - items
+        - shippingAddress
+        - total
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        orderNumber:
+          type: string
+          example: "ORD-2025-00001"
+        userId:
+          $ref: '#/components/schemas/UUID'
+        status:
+          type: string
+          enum: [pending, processing, shipped, delivered, cancelled, refunded]
+          default: pending
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        shippingAddress:
+          $ref: '#/components/schemas/Address'
+        billingAddress:
+          $ref: '#/components/schemas/Address'
+        subtotal:
+          $ref: '#/components/schemas/Money'
+        tax:
+          $ref: '#/components/schemas/Money'
+        shipping:
+          $ref: '#/components/schemas/Money'
+        discount:
+          $ref: '#/components/schemas/Money'
+        total:
+          $ref: '#/components/schemas/Money'
+        paymentMethod:
+          type: string
+          enum: [cod, syriatel_cash, mtn_pay, credit_card, crypto]
+        paymentStatus:
+          type: string
+          enum: [pending, paid, failed, refunded]
+        notes:
+          type: string
+        trackingNumber:
+          type: string
+        estimatedDelivery:
+          $ref: '#/components/schemas/DateTime'
+        createdAt:
+          $ref: '#/components/schemas/DateTime'
+        updatedAt:
+          $ref: '#/components/schemas/DateTime'
+    
+    OrderItem:
+      type: object
+      required:
+        - productId
+        - quantity
+        - price
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        productId:
+          $ref: '#/components/schemas/UUID'
+        variantId:
+          $ref: '#/components/schemas/UUID'
+        vendorId:
+          $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+        sku:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+        price:
+          $ref: '#/components/schemas/Money'
+        total:
+          $ref: '#/components/schemas/Money'
+        attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductAttribute'
+    
+    # Payment Related
+    Payment:
+      type: object
+      required:
+        - id
+        - orderId
+        - amount
+        - method
+        - status
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        orderId:
+          $ref: '#/components/schemas/UUID'
+        transactionId:
+          type: string
+        amount:
+          $ref: '#/components/schemas/Money'
+        method:
+          type: string
+          enum: [cod, syriatel_cash, mtn_pay, credit_card, crypto]
+        status:
+          type: string
+          enum: [pending, processing, completed, failed, cancelled, refunded]
+        gateway:
+          type: string
+        gatewayResponse:
+          type: object
+        metadata:
+          type: object
+        createdAt:
+          $ref: '#/components/schemas/DateTime'
+        updatedAt:
+          $ref: '#/components/schemas/DateTime'
+    
+    # Vendor Related
+    Vendor:
+      type: object
+      required:
+        - id
+        - userId
+        - storeName
+        - status
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        userId:
+          $ref: '#/components/schemas/UUID'
+        storeName:
+          type: string
+          example: "Ahmad Electronics"
+        storeNameAr:
+          type: string
+          example: "أحمد للإلكترونيات"
+        slug:
+          type: string
+          example: "ahmad-electronics"
+        description:
+          type: string
+        logo:
+          type: string
+          format: uri
+        banner:
+          type: string
+          format: uri
+        status:
+          type: string
+          enum: [pending, active, suspended, banned]
+          default: pending
+        rating:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 5
+        reviewCount:
+          type: integer
+          minimum: 0
+        commission:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          example: 15
+        businessInfo:
+          $ref: '#/components/schemas/BusinessInfo'
+        bankInfo:
+          $ref: '#/components/schemas/BankInfo'
+        settings:
+          type: object
+        createdAt:
+          $ref: '#/components/schemas/DateTime'
+        updatedAt:
+          $ref: '#/components/schemas/DateTime'
+    
+    BusinessInfo:
+      type: object
+      required:
+        - legalName
+        - registrationNumber
+        - taxNumber
+      properties:
+        legalName:
+          type: string
+        registrationNumber:
+          type: string
+        taxNumber:
+          type: string
+        address:
+          $ref: '#/components/schemas/Address'
+        phoneNumber:
+          $ref: '#/components/schemas/PhoneNumber'
+        email:
+          $ref: '#/components/schemas/Email'
+    
+    BankInfo:
+      type: object
+      required:
+        - accountName
+        - accountNumber
+        - bankName
+      properties:
+        accountName:
+          type: string
+        accountNumber:
+          type: string
+        bankName:
+          type: string
+        branch:
+          type: string
+        swiftCode:
+          type: string
+    
+    # Common Response Schemas
+    SuccessResponse:
+      type: object
+      required:
+        - success
+        - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+    
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          $ref: '#/components/schemas/Error'
+    
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: "VALIDATION_ERROR"
+        message:
+          type: string
+          example: "Invalid input data"
+        details:
+          type: object
+        timestamp:
+          $ref: '#/components/schemas/DateTime'
+    
+    ResponseMeta:
+      type: object
+      properties:
+        timestamp:
+          $ref: '#/components/schemas/DateTime'
+        version:
+          type: string
+          example: "1.0.0"
+        requestId:
+          $ref: '#/components/schemas/UUID'
+    
+    PaginationMeta:
+      type: object
+      required:
+        - page
+        - limit
+        - total
+        - pages
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          example: 1
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          example: 20
+        total:
+          type: integer
+          minimum: 0
+          example: 100
+        pages:
+          type: integer
+          minimum: 0
+          example: 5

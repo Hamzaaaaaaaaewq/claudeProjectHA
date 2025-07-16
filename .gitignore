@@ -1,0 +1,215 @@
+# Dependencies
+node_modules/
+vendor/
+bower_components/
+jspm_packages/
+
+# Build outputs
+dist/
+build/
+out/
+target/
+*.dll
+*.exe
+*.o
+*.so
+*.dylib
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.*.local
+config/local.json
+config/production.json
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Testing
+coverage/
+.nyc_output/
+test-results/
+junit.xml
+*.lcov
+.coverage
+htmlcov/
+.pytest_cache/
+.phpunit.result.cache
+playwright-report/
+playwright/.cache/
+cypress/videos/
+cypress/screenshots/
+.lighthouseci/
+
+# Cache
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.vuepress/dist/
+.serverless/
+.fusebox/
+.dynamodb/
+.tern-port
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Package files
+*.tar
+*.tar.gz
+*.zip
+*.7z
+*.dmg
+*.iso
+*.jar
+*.rar
+*.war
+*.ear
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+data/
+postgres-data/
+mysql-data/
+redis-data/
+
+# Certificates and keys
+*.pem
+*.key
+*.crt
+*.csr
+*.der
+*.p7b
+*.p12
+*.pfx
+.cert/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+.tmp/
+
+# Docker
+.docker/
+docker-compose.override.yml
+.dockerignore.local
+
+# Kubernetes
+*.kubeconfig
+kubeconfig
+.kube/
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.spyderproject
+.spyproject
+.ropeproject
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Java
+*.class
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+.gradletasknamecache
+
+# Upload directories
+uploads/
+public/uploads/
+static/uploads/
+
+# Generated files
+generated/
+auto-generated/
+.swagger-codegen/
+api-docs.json
+api-docs.yaml
+bundle-stats.json
+bundle-size-report.json
+arabic-typography-report.json
+next-env.d.ts
+*.tsbuildinfo
+storybook-static/
+.vercel
+
+# Monitoring
+.monitoring/
+grafana-storage/
+prometheus-data/
+
+# Custom
+.notes/
+.private/
+TODO.md
+NOTES.md
+scratch/

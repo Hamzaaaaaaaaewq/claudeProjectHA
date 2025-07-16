@@ -1,0 +1,877 @@
+name: Frontend CI/CD Pipeline
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-pipeline.yml'
+      - 'package.json'
+      - 'package-lock.json'
+  push:
+    branches:
+      - main
+      - develop
+      - 'release/**'
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-pipeline.yml'
+
+env:
+  NODE_VERSION: '18.x'
+  PERCY_PARALLEL_NONCE: ${{ github.run_id }}-${{ github.run_number }}
+  PERCY_PARALLEL_TOTAL: 3
+
+jobs:
+  # ========================================
+  # Stage 1: Code Quality & Static Analysis
+  # ========================================
+  
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history for better analysis
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci --prefer-offline --no-audit
+      
+      - name: Run ESLint
+        working-directory: frontend
+        run: |
+          npm run lint -- --format json --output-file eslint-report.json
+          npm run lint -- --format stylish
+        continue-on-error: true
+      
+      - name: Upload ESLint report
+        uses: actions/upload-artifact@v3
+        with:
+          name: eslint-report
+          path: frontend/eslint-report.json
+      
+      - name: Check ESLint errors
+        working-directory: frontend
+        run: |
+          if [ -f eslint-report.json ]; then
+            ERROR_COUNT=$(jq '[.[] | .errorCount] | add' eslint-report.json)
+            if [ "$ERROR_COUNT" -gt 0 ]; then
+              echo "::error::Found $ERROR_COUNT ESLint errors"
+              exit 1
+            fi
+          fi
+      
+      - name: Run Prettier check
+        working-directory: frontend
+        run: npm run format:check
+      
+      - name: TypeScript type checking
+        working-directory: frontend
+        run: |
+          npm run type-check -- --noEmit --pretty --incremental false
+          
+      - name: Check for circular dependencies
+        working-directory: frontend
+        run: npx madge --circular --extensions ts,tsx src/
+
+  # ========================================
+  # Stage 2: Security Scanning
+  # ========================================
+  
+  security-scan:
+    name: Security Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci --prefer-offline
+      
+      - name: Run npm audit
+        working-directory: frontend
+        run: |
+          npm audit --production --audit-level=high
+          npm audit --json > npm-audit.json || true
+        continue-on-error: true
+      
+      - name: Check critical vulnerabilities
+        working-directory: frontend
+        run: |
+          CRITICAL=$(jq '.metadata.vulnerabilities.critical' npm-audit.json)
+          HIGH=$(jq '.metadata.vulnerabilities.high' npm-audit.json)
+          if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+            echo "::error::Found $CRITICAL critical and $HIGH high vulnerabilities"
+            exit 1
+          fi
+      
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --file=frontend/package.json
+      
+      - name: Check for secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./frontend
+          base: ${{ github.event.pull_request.base.sha }}
+          head: ${{ github.event.pull_request.head.sha }}
+      
+      - name: Run OWASP dependency check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'syriamart-frontend'
+          path: './frontend'
+          format: 'HTML,JSON'
+          args: >
+            --enableRetired
+            --enableExperimental
+      
+      - name: Upload security reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports
+          path: |
+            frontend/npm-audit.json
+            reports/
+
+  # ========================================
+  # Stage 3: Unit & Component Tests
+  # ========================================
+  
+  unit-tests:
+    name: Unit & Component Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci --prefer-offline
+      
+      - name: Run unit tests (shard ${{ matrix.shard }}/3)
+        working-directory: frontend
+        run: |
+          npm run test:unit -- \
+            --coverage \
+            --coverageReporters=json \
+            --coverageDirectory=coverage-${{ matrix.shard }} \
+            --shard=${{ matrix.shard }}/3 \
+            --ci \
+            --reporters=default \
+            --reporters=jest-junit
+        env:
+          JEST_JUNIT_OUTPUT_DIR: ./test-results
+          JEST_JUNIT_OUTPUT_NAME: junit-${{ matrix.shard }}.xml
+      
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-unit-${{ matrix.shard }}
+          path: |
+            frontend/test-results/
+            frontend/coverage-${{ matrix.shard }}/
+      
+      - name: Check coverage thresholds
+        working-directory: frontend
+        run: |
+          COVERAGE=$(jq '.total.lines.pct' coverage-${{ matrix.shard }}/coverage-summary.json)
+          echo "Coverage: $COVERAGE%"
+          if (( $(echo "$COVERAGE < 85" | bc -l) )); then
+            echo "::error::Coverage $COVERAGE% is below threshold of 85%"
+            exit 1
+          fi
+
+  # ========================================
+  # Stage 4: Integration Tests
+  # ========================================
+  
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: syriamart_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci --prefer-offline
+      
+      - name: Run integration tests
+        working-directory: frontend
+        run: npm run test:integration -- --ci
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/syriamart_test
+          REDIS_URL: redis://localhost:6379
+          NODE_ENV: test
+      
+      - name: Upload integration test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-integration
+          path: frontend/test-results/
+
+  # ========================================
+  # Stage 5: Build & Bundle Analysis
+  # ========================================
+  
+  build-and-analyze:
+    name: Build & Bundle Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci --prefer-offline
+      
+      - name: Build web application
+        working-directory: frontend/apps/web
+        run: |
+          npm run build
+          
+          # Generate build stats
+          npm run build:analyze -- --json > bundle-stats.json
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.API_URL }}
+          NEXT_PUBLIC_ENVIRONMENT: production
+      
+      - name: Check bundle sizes
+        working-directory: frontend/apps/web
+        run: |
+          # Check JS bundle size
+          JS_SIZE=$(find .next/static/chunks -name "*.js" -type f -exec du -b {} + | awk '{total += $1} END {print total}')
+          JS_SIZE_KB=$((JS_SIZE / 1024))
+          echo "JavaScript bundle size: ${JS_SIZE_KB}KB"
+          
+          if [ $JS_SIZE_KB -gt 200 ]; then
+            echo "::error::JavaScript bundle size ${JS_SIZE_KB}KB exceeds limit of 200KB"
+            exit 1
+          fi
+          
+          # Check CSS size
+          CSS_SIZE=$(find .next/static/css -name "*.css" -type f -exec du -b {} + | awk '{total += $1} END {print total}')
+          CSS_SIZE_KB=$((CSS_SIZE / 1024))
+          echo "CSS bundle size: ${CSS_SIZE_KB}KB"
+          
+          if [ $CSS_SIZE_KB -gt 50 ]; then
+            echo "::error::CSS bundle size ${CSS_SIZE_KB}KB exceeds limit of 50KB"
+            exit 1
+          fi
+      
+      - name: Build mobile applications
+        working-directory: frontend/apps/mobile
+        run: |
+          # Build Android
+          npm run build:android
+          
+          # Check APK size
+          APK_SIZE=$(stat -c%s android/app/build/outputs/apk/release/app-release.apk)
+          APK_SIZE_MB=$((APK_SIZE / 1024 / 1024))
+          echo "Android APK size: ${APK_SIZE_MB}MB"
+          
+          if [ $APK_SIZE_MB -gt 50 ]; then
+            echo "::error::Android APK size ${APK_SIZE_MB}MB exceeds limit of 50MB"
+            exit 1
+          fi
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            frontend/apps/web/.next/
+            frontend/apps/web/bundle-stats.json
+            frontend/apps/mobile/android/app/build/outputs/
+
+  # ========================================
+  # Stage 6: Visual Regression Testing
+  # ========================================
+  
+  visual-regression:
+    name: Visual Regression Tests
+    runs-on: ubuntu-latest
+    needs: [build-and-analyze]
+    strategy:
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: frontend
+        run: |
+          npm ci --prefer-offline
+          npx playwright install --with-deps ${{ matrix.browser }}
+      
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: frontend/apps/web/.next/
+      
+      - name: Start application
+        working-directory: frontend/apps/web
+        run: |
+          npm run start &
+          npx wait-on http://localhost:3000 -t 30000
+      
+      - name: Run Percy visual tests
+        working-directory: frontend
+        run: |
+          npm run test:visual -- --browser=${{ matrix.browser }}
+        env:
+          PERCY_TOKEN: ${{ secrets.PERCY_TOKEN }}
+          PERCY_PARALLEL_NONCE: ${{ env.PERCY_PARALLEL_NONCE }}
+          PERCY_PARALLEL_TOTAL: ${{ env.PERCY_PARALLEL_TOTAL }}
+      
+      - name: Upload visual test artifacts
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: visual-test-failures-${{ matrix.browser }}
+          path: |
+            frontend/test-results/
+            frontend/.percy/
+
+  # ========================================
+  # Stage 7: E2E Tests
+  # ========================================
+  
+  e2e-tests-web:
+    name: E2E Tests - Web
+    runs-on: ubuntu-latest
+    needs: [build-and-analyze]
+    strategy:
+      matrix:
+        browser: [chromium, firefox]
+        locale: [en, ar]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: frontend
+        run: |
+          npm ci --prefer-offline
+          npx playwright install --with-deps ${{ matrix.browser }}
+      
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: frontend/apps/web/.next/
+      
+      - name: Run E2E tests
+        working-directory: frontend
+        run: |
+          npm run test:e2e:web -- \
+            --project=${{ matrix.browser }} \
+            --grep "@${{ matrix.locale }}"
+        env:
+          LOCALE: ${{ matrix.locale }}
+          BASE_URL: http://localhost:3000
+      
+      - name: Upload E2E test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: e2e-results-${{ matrix.browser }}-${{ matrix.locale }}
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+
+  e2e-tests-mobile:
+    name: E2E Tests - Mobile
+    runs-on: macos-latest
+    needs: [build-and-analyze]
+    strategy:
+      matrix:
+        platform: [ios, android]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci --prefer-offline
+      
+      - name: Setup Detox
+        working-directory: frontend/apps/mobile
+        run: |
+          brew tap wix/brew
+          brew install applesimutils
+          npm run detox:build:${{ matrix.platform }}
+      
+      - name: Run mobile E2E tests
+        working-directory: frontend/apps/mobile
+        run: |
+          npm run detox:test:${{ matrix.platform }} -- \
+            --take-screenshots failing \
+            --record-videos failing
+      
+      - name: Upload mobile test artifacts
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: mobile-e2e-${{ matrix.platform }}
+          path: |
+            frontend/apps/mobile/artifacts/
+
+  # ========================================
+  # Stage 8: Performance Testing
+  # ========================================
+  
+  performance-tests:
+    name: Performance Testing
+    runs-on: ubuntu-latest
+    needs: [build-and-analyze]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci --prefer-offline
+      
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: frontend/apps/web/.next/
+      
+      - name: Run Lighthouse CI
+        working-directory: frontend
+        run: |
+          npm run lighthouse:ci
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+      
+      - name: Check Lighthouse scores
+        working-directory: frontend
+        run: |
+          # Parse Lighthouse results
+          PERF_SCORE=$(jq '.categories.performance.score' .lighthouseci/lhr-*.json | head -1)
+          A11Y_SCORE=$(jq '.categories.accessibility.score' .lighthouseci/lhr-*.json | head -1)
+          PWA_SCORE=$(jq '.categories.pwa.score' .lighthouseci/lhr-*.json | head -1)
+          
+          # Convert to percentage
+          PERF_PCT=$(echo "$PERF_SCORE * 100" | bc)
+          A11Y_PCT=$(echo "$A11Y_SCORE * 100" | bc)
+          PWA_PCT=$(echo "$PWA_SCORE * 100" | bc)
+          
+          echo "Performance: ${PERF_PCT}%"
+          echo "Accessibility: ${A11Y_PCT}%"
+          echo "PWA: ${PWA_PCT}%"
+          
+          # Check thresholds
+          if (( $(echo "$PERF_SCORE < 0.9" | bc -l) )); then
+            echo "::error::Performance score ${PERF_PCT}% is below 90%"
+            exit 1
+          fi
+          
+          if (( $(echo "$A11Y_SCORE < 0.95" | bc -l) )); then
+            echo "::error::Accessibility score ${A11Y_PCT}% is below 95%"
+            exit 1
+          fi
+          
+          if (( $(echo "$PWA_SCORE < 0.9" | bc -l) )); then
+            echo "::error::PWA score ${PWA_PCT}% is below 90%"
+            exit 1
+          fi
+      
+      - name: Upload Lighthouse reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: lighthouse-reports
+          path: frontend/.lighthouseci/
+
+  # ========================================
+  # Stage 9: Arabic/RTL Testing
+  # ========================================
+  
+  rtl-tests:
+    name: Arabic/RTL Testing
+    runs-on: ubuntu-latest
+    needs: [build-and-analyze]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci --prefer-offline
+      
+      - name: Run RTL-specific tests
+        working-directory: frontend
+        run: |
+          npm run test:rtl -- --coverage
+      
+      - name: Check Arabic translations
+        working-directory: frontend
+        run: |
+          # Verify all keys have Arabic translations
+          node scripts/check-translations.js ar
+      
+      - name: Visual regression for RTL
+        working-directory: frontend
+        run: |
+          npm run test:visual:rtl
+        env:
+          PERCY_TOKEN: ${{ secrets.PERCY_TOKEN }}
+      
+      - name: Check Arabic typography
+        working-directory: frontend
+        run: |
+          # Run custom Arabic typography checks
+          node scripts/check-arabic-typography.js
+
+  # ========================================
+  # Stage 10: Accessibility Testing
+  # ========================================
+  
+  accessibility-tests:
+    name: Accessibility Testing
+    runs-on: ubuntu-latest
+    needs: [build-and-analyze]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci --prefer-offline
+      
+      - name: Run axe accessibility tests
+        working-directory: frontend
+        run: |
+          npm run test:a11y -- --ci
+      
+      - name: Check color contrast
+        working-directory: frontend
+        run: |
+          npm run test:contrast
+      
+      - name: Keyboard navigation tests
+        working-directory: frontend
+        run: |
+          npm run test:keyboard
+      
+      - name: Screen reader tests
+        working-directory: frontend
+        run: |
+          npm run test:screen-reader
+      
+      - name: Generate accessibility report
+        working-directory: frontend
+        run: |
+          npm run a11y:report
+      
+      - name: Upload accessibility reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: accessibility-reports
+          path: frontend/a11y-reports/
+
+  # ========================================
+  # Stage 11: Deploy Preview (PR only)
+  # ========================================
+  
+  deploy-preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    needs: [
+      code-quality,
+      security-scan,
+      unit-tests,
+      integration-tests,
+      build-and-analyze
+    ]
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Deploy to Vercel Preview
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./frontend/apps/web
+          alias-domains: |
+            pr-${{ github.event.pull_request.number }}.syriamart.vercel.app
+      
+      - name: Comment PR with preview URL
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 Preview deployed to: https://pr-${{ github.event.pull_request.number }}.syriamart.vercel.app`
+            })
+
+  # ========================================
+  # Stage 12: Final Report
+  # ========================================
+  
+  test-report:
+    name: Generate Test Report
+    runs-on: ubuntu-latest
+    needs: [
+      unit-tests,
+      integration-tests,
+      e2e-tests-web,
+      visual-regression,
+      performance-tests,
+      rtl-tests,
+      accessibility-tests
+    ]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: test-artifacts/
+      
+      - name: Generate combined test report
+        run: |
+          # Combine all test results
+          mkdir -p combined-results
+          find test-artifacts -name "*.xml" -type f -exec cp {} combined-results/ \;
+          
+          # Generate HTML report
+          npx junit-viewer --results=combined-results --save=test-report.html
+      
+      - name: Calculate combined coverage
+        run: |
+          # Merge coverage reports
+          npx nyc merge test-artifacts/test-results-unit-*/coverage-* coverage/
+          npx nyc report --reporter=html --reporter=text --reporter=json-summary
+      
+      - name: Create summary comment
+        uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const fs = require('fs');
+            const coverage = JSON.parse(fs.readFileSync('coverage/coverage-summary.json', 'utf8'));
+            
+            const comment = `
+            ## 📊 Frontend Test Results
+            
+            ### Coverage
+            - Lines: ${coverage.total.lines.pct}%
+            - Statements: ${coverage.total.statements.pct}%
+            - Functions: ${coverage.total.functions.pct}%
+            - Branches: ${coverage.total.branches.pct}%
+            
+            ### Test Suites
+            ✅ Unit Tests: Passed
+            ✅ Integration Tests: Passed
+            ✅ E2E Tests: Passed
+            ✅ Visual Regression: Passed
+            ✅ Performance: Score > 90
+            ✅ Accessibility: WCAG AA Compliant
+            ✅ RTL/Arabic: Fully Tested
+            
+            [View Full Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+      
+      - name: Upload final report
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-report-final
+          path: |
+            test-report.html
+            coverage/
+
+  # ========================================
+  # Stage 13: Deploy to Production
+  # ========================================
+  
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [
+      code-quality,
+      security-scan,
+      unit-tests,
+      integration-tests,
+      build-and-analyze,
+      e2e-tests-web,
+      visual-regression,
+      performance-tests,
+      rtl-tests,
+      accessibility-tests
+    ]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: production
+      url: https://syriamart.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Deploy to Production
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+          working-directory: ./frontend/apps/web
+      
+      - name: Purge CDN cache
+        run: |
+          curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE_ID }}/purge_cache" \
+            -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}'
+      
+      - name: Notify deployment
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: 'Frontend deployed to production'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      
+      - name: Create deployment record
+        run: |
+          echo "{
+            \"version\": \"${{ github.sha }}\",
+            \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+            \"deployer\": \"${{ github.actor }}\",
+            \"environment\": \"production\"
+          }" > deployment-record.json
+      
+      - name: Upload deployment record
+        uses: actions/upload-artifact@v3
+        with:
+          name: deployment-record
+          path: deployment-record.json

@@ -1,0 +1,130 @@
+# Percy configuration for visual regression testing
+version: 2
+
+# Snapshot settings
+snapshot:
+  # Responsive widths to capture
+  widths:
+    - 375   # Mobile (iPhone 8)
+    - 768   # Tablet (iPad)
+    - 1280  # Desktop
+    - 1920  # Wide desktop
+  
+  # Minimum height for captures
+  min-height: 1024
+  
+  # Enable JavaScript
+  enable-javascript: true
+  
+  # CSS to inject for consistent snapshots
+  percy-css: |
+    /* Hide dynamic content that changes between snapshots */
+    [data-percy-hide] {
+      visibility: hidden !important;
+    }
+    
+    /* Disable animations for consistent snapshots */
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0s !important;
+      animation-delay: 0s !important;
+      transition-duration: 0s !important;
+      transition-delay: 0s !important;
+    }
+    
+    /* Hide scrollbars */
+    ::-webkit-scrollbar {
+      display: none !important;
+    }
+    
+    /* Stabilize date/time displays */
+    [data-testid*="date"],
+    [data-testid*="time"],
+    .timestamp {
+      visibility: hidden !important;
+    }
+    
+    /* Ensure fonts are loaded */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    }
+    
+    /* Arabic font for RTL */
+    [dir="rtl"] {
+      font-family: 'Noto Naskh Arabic', Arial, sans-serif !important;
+    }
+
+# Discovery settings
+discovery:
+  # Allowed hostnames
+  allowed-hostnames:
+    - localhost
+    - '*.syriamart.com'
+    - '*.vercel.app'
+  
+  # Network idle timeout
+  network-idle-timeout: 500
+  
+  # Disable caching
+  disable-cache: true
+  
+  # Launch options for browser
+  launch-options:
+    headless: true
+    args:
+      - '--no-sandbox'
+      - '--disable-setuid-sandbox'
+      - '--disable-dev-shm-usage'
+      - '--disable-accelerated-2d-canvas'
+      - '--disable-gpu'
+      - '--lang=en-US,ar'
+  
+  # Request headers
+  request-headers:
+    Accept-Language: 'en-US,en;q=0.9,ar;q=0.8'
+
+# Storybook settings
+storybook:
+  # Wait for Storybook to be ready
+  wait-for-timeout: 30000
+  
+  # Additional snapshots for Storybook
+  additional-snapshots:
+    - suffix: ' - RTL'
+      rtl: true
+      prefix: '[RTL] '
+    - suffix: ' - Dark Mode'
+      execute: |
+        document.documentElement.setAttribute('data-theme', 'dark');
+    - suffix: ' - Mobile'
+      width: 375
+    - suffix: ' - High Contrast'
+      execute: |
+        document.documentElement.classList.add('high-contrast');
+
+# Static site settings
+static:
+  # Base URL
+  base-url: '/'
+  
+  # Snapshot files
+  files: '**/*.html'
+  
+  # Ignore patterns
+  ignore:
+    - '**/node_modules/**'
+    - '**/.next/**'
+    - '**/coverage/**'
+    - '**/test-results/**'
+
+# Agent settings
+agent:
+  # Asset discovery timeout
+  asset-discovery-timeout: 30000
+  
+  # Concurrent snapshots
+  concurrent-snapshots: 5
+  
+  # Debug mode
+  debug: false

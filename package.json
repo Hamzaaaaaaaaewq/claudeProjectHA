@@ -1,0 +1,51 @@
+{
+  "name": "syriamart",
+  "version": "1.0.0",
+  "description": "Syrian E-Commerce Platform",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "services/*"
+  ],
+  "scripts": {
+    "dev": "echo 'Use npm run dev in specific workspace'",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "prepare": "husky install",
+    "pre-commit": "lint-staged"
+  },
+  "devDependencies": {
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.1.1",
+    "@commitlint/cli": "^18.4.4",
+    "@commitlint/config-conventional": "^18.4.4"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,css,md}": [
+      "prettier --write"
+    ]
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/[your-username]/syriamart.git"
+  },
+  "author": "SyriaMart Team",
+  "license": "PROPRIETARY"
+}

@@ -1,0 +1,428 @@
+openapi: 3.0.3
+info:
+  title: Syrian Electronic Payment (SEP) Integration Contract
+  version: 1.0.0
+  description: |
+    Integration contract for Syrian Electronic Payment Company (SEP) services.
+    This document defines the API contract between SyriaMart and SEP for payment processing.
+  contact:
+    name: SEP Integration Support
+    email: integration@sep.sy
+    url: https://www.sep.sy
+
+servers:
+  - url: https://api.sep.sy/v1
+    description: Production server
+  - url: https://sandbox.sep.sy/v1
+    description: Sandbox server for testing
+
+security:
+  - ApiKeyAuth: []
+  - OAuth2: []
+
+paths:
+  /payments/initiate:
+    post:
+      summary: Initiate a payment transaction
+      operationId: initiatePayment
+      tags:
+        - Payments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+      responses:
+        '200':
+          description: Payment initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /payments/{paymentId}/confirm:
+    post:
+      summary: Confirm a payment transaction
+      operationId: confirmPayment
+      tags:
+        - Payments
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentConfirmation'
+      responses:
+        '200':
+          description: Payment confirmed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentStatus'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /payments/{paymentId}/status:
+    get:
+      summary: Get payment status
+      operationId: getPaymentStatus
+      tags:
+        - Payments
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payment status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentStatus'
+
+  /payments/{paymentId}/refund:
+    post:
+      summary: Refund a payment
+      operationId: refundPayment
+      tags:
+        - Refunds
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefundRequest'
+      responses:
+        '200':
+          description: Refund processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefundResponse'
+
+  /webhooks/payment:
+    post:
+      summary: Payment status webhook
+      operationId: paymentWebhook
+      tags:
+        - Webhooks
+      security:
+        - WebhookSignature: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookPayload'
+      responses:
+        '200':
+          description: Webhook processed successfully
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.sep.sy/oauth/token
+          scopes:
+            payments:read: Read payment information
+            payments:write: Create and modify payments
+            refunds:write: Process refunds
+    WebhookSignature:
+      type: apiKey
+      in: header
+      name: X-SEP-Signature
+
+  schemas:
+    PaymentRequest:
+      type: object
+      required:
+        - merchantId
+        - orderId
+        - amount
+        - currency
+        - customerInfo
+        - returnUrl
+        - callbackUrl
+      properties:
+        merchantId:
+          type: string
+          description: SyriaMart merchant ID
+          example: "SYRIAMART_001"
+        orderId:
+          type: string
+          description: Unique order identifier
+          example: "ORD-2025-00001"
+        amount:
+          type: number
+          format: double
+          minimum: 0.01
+          description: Payment amount
+          example: 50000.00
+        currency:
+          type: string
+          enum: [SYP, USD]
+          default: SYP
+          description: Currency code
+        customerInfo:
+          $ref: '#/components/schemas/CustomerInfo'
+        description:
+          type: string
+          maxLength: 255
+          description: Payment description
+        returnUrl:
+          type: string
+          format: uri
+          description: URL to redirect after payment
+        callbackUrl:
+          type: string
+          format: uri
+          description: Webhook URL for status updates
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Additional metadata
+
+    PaymentResponse:
+      type: object
+      properties:
+        paymentId:
+          type: string
+          description: SEP payment identifier
+        status:
+          $ref: '#/components/schemas/PaymentStatusEnum'
+        paymentUrl:
+          type: string
+          format: uri
+          description: URL to redirect customer for payment
+        expiresAt:
+          type: string
+          format: date-time
+          description: Payment URL expiration time
+
+    PaymentConfirmation:
+      type: object
+      required:
+        - verificationCode
+      properties:
+        verificationCode:
+          type: string
+          description: SMS verification code
+          pattern: '^[0-9]{6}$'
+
+    PaymentStatus:
+      type: object
+      properties:
+        paymentId:
+          type: string
+        orderId:
+          type: string
+        status:
+          $ref: '#/components/schemas/PaymentStatusEnum'
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+        paidAt:
+          type: string
+          format: date-time
+        failureReason:
+          type: string
+        transactionReference:
+          type: string
+          description: SEP transaction reference
+
+    RefundRequest:
+      type: object
+      required:
+        - amount
+        - reason
+      properties:
+        amount:
+          type: number
+          format: double
+          minimum: 0.01
+          description: Refund amount (partial or full)
+        reason:
+          type: string
+          enum: [customer_request, merchant_error, fraud, other]
+        description:
+          type: string
+          maxLength: 500
+
+    RefundResponse:
+      type: object
+      properties:
+        refundId:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        refundedAmount:
+          type: number
+          format: double
+        processedAt:
+          type: string
+          format: date-time
+
+    CustomerInfo:
+      type: object
+      required:
+        - phoneNumber
+        - email
+      properties:
+        phoneNumber:
+          type: string
+          pattern: '^\+963[0-9]{9}$'
+          description: Syrian mobile number
+          example: "+963991234567"
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        nationalId:
+          type: string
+          description: Syrian national ID (optional)
+
+    WebhookPayload:
+      type: object
+      required:
+        - eventType
+        - paymentId
+        - timestamp
+        - data
+      properties:
+        eventType:
+          type: string
+          enum: [payment.completed, payment.failed, refund.completed]
+        paymentId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        data:
+          type: object
+          description: Event-specific data
+
+    PaymentStatusEnum:
+      type: string
+      enum:
+        - pending
+        - processing
+        - completed
+        - failed
+        - cancelled
+        - expired
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          additionalProperties: true
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: "INVALID_REQUEST"
+            message: "Invalid payment amount"
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: "UNAUTHORIZED"
+            message: "Invalid API key"
+
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: "NOT_FOUND"
+            message: "Payment not found"
+
+    ServerError:
+      description: Server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: "INTERNAL_ERROR"
+            message: "An internal error occurred"
+
+# Integration Notes
+x-integration-notes:
+  authentication:
+    - API key must be included in all requests
+    - OAuth2 token required for sensitive operations
+    - Webhook signatures must be verified using HMAC-SHA256
+  
+  rate-limits:
+    - 100 requests per minute for payment initiation
+    - 1000 requests per minute for status checks
+    
+  sandbox:
+    - Test cards and phone numbers available in documentation
+    - Sandbox environment mirrors production behavior
+    - Test data is cleared daily
+    
+  security:
+    - All communication must use TLS 1.3
+    - IP whitelisting required for production
+    - Webhook endpoints must respond within 5 seconds
+    
+  support:
+    - Technical support: tech-support@sep.sy
+    - Integration guide: https://docs.sep.sy/syriamart
+    - Status page: https://status.sep.sy
