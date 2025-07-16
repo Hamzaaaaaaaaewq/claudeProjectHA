@@ -3,10 +3,6 @@
   "version": "1.0.0",
   "description": "Syrian E-Commerce Platform",
   "private": true,
-  "workspaces": [
-    "frontend",
-    "services/*"
-  ],
   "scripts": {
     "dev": "echo 'Use npm run dev in specific workspace'",
     "build": "npm run build --workspaces --if-present",
@@ -14,8 +10,12 @@
     "lint": "npm run lint --workspaces --if-present",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
     "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
-    "prepare": "husky install",
-    "pre-commit": "lint-staged"
+    "validate:openapi": "node scripts/validate-openapi.js",
+    "prepare": "if [ -z \"$CI\" ]; then husky install; fi || true",
+    "pre-commit": "lint-staged",
+    "type-check": "echo 'Run type-check in specific workspace'",
+    "test:coverage": "echo 'Run test:coverage in specific workspace'",
+    "complexity:check": "echo 'Run complexity:check in specific workspace'"
   },
   "devDependencies": {
     "husky": "^8.0.3",

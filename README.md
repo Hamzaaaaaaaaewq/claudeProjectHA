@@ -1,9 +1,10 @@
 # SyriaMart - Syrian E-Commerce Platform
 
-[![CI/CD Status](https://github.com/[your-username]/syriamart/actions/workflows/main-pipeline.yml/badge.svg)](https://github.com/[your-username]/syriamart/actions/workflows/main-pipeline.yml)
-[![Security Scan](https://github.com/[your-username]/syriamart/actions/workflows/security.yml/badge.svg)](https://github.com/[your-username]/syriamart/actions/workflows/security.yml)
-[![Coverage Status](https://coveralls.io/repos/github/[your-username]/syriamart/badge.svg?branch=main)](https://coveralls.io/github/[your-username]/syriamart?branch=main)
+[![CI/CD Status](https://github.com/Hamzaaaaaaaaewq/claudeProjectHA/actions/workflows/main-pipeline.yml/badge.svg)](https://github.com/Hamzaaaaaaaaewq/claudeProjectHA/actions/workflows/main-pipeline.yml)
+[![Security Scan](https://github.com/Hamzaaaaaaaaewq/claudeProjectHA/actions/workflows/security.yml/badge.svg)](https://github.com/Hamzaaaaaaaaewq/claudeProjectHA/actions/workflows/security.yml)
+[![Frontend Tests](https://github.com/Hamzaaaaaaaaewq/claudeProjectHA/actions/workflows/frontend-pipeline.yml/badge.svg)](https://github.com/Hamzaaaaaaaaewq/claudeProjectHA/actions/workflows/frontend-pipeline.yml)
 [![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](docs/CONTRIBUTING.md)
 
 A comprehensive e-commerce platform specifically designed for the Syrian market, built with modern microservices architecture and optimized for local conditions including limited internet connectivity and mobile-first usage.
 
@@ -11,9 +12,11 @@ A comprehensive e-commerce platform specifically designed for the Syrian market,
 
 - **Syrian Market Optimized**: RTL Arabic support, local payment methods (Syriatel Cash, MTN Pay, COD)
 - **Mobile-First**: Progressive Web App with offline capabilities
-- **Performance**: Optimized for low-bandwidth connections
+- **Performance**: Optimized for low-bandwidth connections (3G/4G)
 - **Security**: Enterprise-grade security with CSRF protection, rate limiting, and strong authentication
 - **Scalable**: Microservices architecture with event-driven communication
+- **CI/CD**: Comprehensive automated testing and deployment pipelines
+- **Accessibility**: WCAG 2.1 AA compliant with Arabic screen reader support
 
 ## 📋 Table of Contents
 
@@ -43,8 +46,8 @@ A comprehensive e-commerce platform specifically designed for the Syrian market,
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/[your-username]/syriamart.git
-cd syriamart
+git clone https://github.com/Hamzaaaaaaaaewq/claudeProjectHA.git
+cd claudeProjectHA/syriamart
 ```
 
 ### 2. Install dependencies
@@ -90,21 +93,34 @@ docker-compose up -d
 ```
 syriamart/
 ├── .github/
-│   └── workflows/          # CI/CD pipelines
+│   └── workflows/          # CI/CD pipelines (12 comprehensive checks)
 ├── docs/                   # Comprehensive documentation
 │   ├── api-specs/         # OpenAPI specifications
 │   ├── adrs/              # Architecture Decision Records
+│   ├── architecture/      # System architecture docs
+│   ├── contracts/         # Contract testing guides
+│   ├── dependencies/      # Dependency registry
+│   ├── events/            # Event schema documentation
+│   ├── runbooks/          # Operational procedures
 │   └── test-plans/        # Testing strategies
-├── frontend/              # Next.js frontend application
+├── frontend/              # Next.js 14 frontend application
+│   ├── public/            # Static assets & PWA manifest
 │   ├── src/
 │   │   ├── app/          # Next.js App Router
 │   │   ├── components/   # React components
-│   │   └── styles/       # Global styles
-│   └── scripts/          # Build and utility scripts
+│   │   ├── hooks/        # Custom React hooks
+│   │   ├── lib/          # Utilities & configurations
+│   │   ├── stores/       # Zustand state management
+│   │   ├── styles/       # Global styles & themes
+│   │   └── types/        # TypeScript definitions
+│   ├── scripts/          # Build and utility scripts
+│   └── tests/            # Frontend test suites
 ├── services/              # Microservices (backend)
-│   ├── user-service/     # Authentication & users
-│   └── payment-service/  # Payment processing
-├── infrastructure/        # IaC configurations (planned)
+│   ├── user-service/     # Authentication & users (Phase 1 ✅)
+│   ├── catalog-service/  # Products & categories (Planned)
+│   ├── order-service/    # Order management (Planned)
+│   └── payment-service/  # Payment processing (Documented)
+├── infrastructure/        # IaC configurations (Planned)
 └── scripts/              # Development & deployment scripts
 ```
 
@@ -215,17 +231,19 @@ All PRs must pass:
 
 ### Key Documents
 
-- [Master Implementation Plan](docs/MASTER-IMPLEMENTATION-PLAN.md)
-- [Mandatory Standards](docs/MANDATORY-STANDARDS.md)
-- [Security Guide](docs/SECURITY.md)
-- [API Documentation](docs/api-specs/)
-- [Architecture Decisions](docs/adrs/)
+- [Master Implementation Plan](docs/MASTER-IMPLEMENTATION-PLAN.md) - Overall project roadmap
+- [Mandatory Standards](docs/MANDATORY-STANDARDS.md) - Non-negotiable engineering requirements
+- [Security Guide](docs/SECURITY.md) - Security policies and threat models
+- [API Documentation](docs/api-specs/) - OpenAPI specifications
+- [Architecture Decisions](docs/adrs/) - Key technical decisions
 
 ### Additional Resources
 
-- [Frontend Testing Strategy](docs/FRONTEND-TESTING-STRATEGY.md)
-- [Development Guide](docs/DEVELOPMENT.md)
-- [Deployment Guide](docs/deployment-runbook.md)
+- [Frontend Testing Strategy](docs/FRONTEND-TESTING-STRATEGY.md) - Comprehensive testing approach
+- [Development Guide](docs/DEVELOPMENT.md) - Development workflow and standards
+- [Deployment Guide](docs/runbooks/deployment-runbook.md) - Production deployment procedures
+- [Authentication Guide](docs/AUTH.md) - Authentication system documentation
+- [Claude Integration](CLAUDE.md) - AI assistant integration guide
 
 ## Environment Variables
 

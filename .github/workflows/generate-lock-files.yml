@@ -1,0 +1,31 @@
+name: Generate Lock Files
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate-locks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+      
+      - name: Generate root lock file
+        run: |
+          npm install --package-lock-only
+          
+      - name: Generate frontend lock file
+        working-directory: frontend
+        run: |
+          npm install --package-lock-only
+          
+      - name: Upload lock files
+        uses: actions/upload-artifact@v4
+        with:
+          name: lock-files
+          path: |
+            package-lock.json
+            frontend/package-lock.json

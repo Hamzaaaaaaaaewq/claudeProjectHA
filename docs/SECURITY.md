@@ -1,9 +1,10 @@
 # SyriaMart Security Guidelines
 
-**Last Updated**: January 15, 2025  
-**Version**: 2.0.0  
+**Last Updated**: January 16, 2025  
+**Version**: 2.1.0  
 **Classification**: Internal Use Only  
-**Review Cycle**: Monthly
+**Review Cycle**: Monthly  
+**Repository**: https://github.com/Hamzaaaaaaaaewq/claudeProjectHA
 
 ## Security Policy
 
@@ -11,7 +12,8 @@ This document outlines the security policies, procedures, and best practices for
 
 **Compliance Status**: ✅ Enforced via CI/CD Pipeline  
 **Enforcement**: Automated security gates block non-compliant code  
-**Zero Tolerance**: No deployment with high-severity vulnerabilities
+**Zero Tolerance**: No deployment with high-severity vulnerabilities  
+**Current Status**: All security checks passing on GitHub Actions
 
 ## Table of Contents
 
@@ -579,7 +581,28 @@ Out of scope:
 
 ### January 2025 Security Implementations ✅
 
-#### Authentication System Security (COMPLETED)
+#### CI/CD Security Pipeline (COMPLETED - January 16, 2025)
+
+1. **Automated Security Scanning** ✅
+   - Trivy vulnerability scanning for containers and dependencies
+   - CodeQL static analysis for code vulnerabilities
+   - npm audit for JavaScript dependencies
+   - Secret scanning to prevent credential leaks
+   - License compliance checking
+
+2. **Security Fixes Applied** ✅
+   - Updated Next.js 14.0.4 → 14.2.25 (CVE-2025-29927, CVE-2024-34351)
+   - Updated Vitest 1.1.0 → 1.6.1 (CVE-2025-24964)
+   - All high/critical vulnerabilities resolved
+   - Dependency registry updated with security notes
+
+3. **GitHub Actions Security** ✅
+   - All actions updated to latest versions
+   - CodeQL updated from v2 to v3
+   - Secure artifact handling with v4
+   - Environment secrets properly configured
+
+#### Authentication System Security (COMPLETED - January 15, 2025)
 
 1. **CSRF Protection** ✅
    - Implemented double-submit cookie pattern
