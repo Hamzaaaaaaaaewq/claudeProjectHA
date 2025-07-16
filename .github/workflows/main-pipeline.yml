@@ -58,7 +58,13 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci --prefer-offline
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "No package-lock.json found, generating..."
+            npm install
+          else
+            npm ci --prefer-offline
+          fi
 
       - name: Run ESLint
         run: npm run lint
@@ -147,7 +153,13 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci --prefer-offline
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "No package-lock.json found, generating..."
+            npm install
+          else
+            npm ci --prefer-offline
+          fi
 
       - name: Create basic test
         run: |
@@ -196,7 +208,13 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci --prefer-offline
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "No package-lock.json found, generating..."
+            npm install
+          else
+            npm ci --prefer-offline
+          fi
 
       - name: Build application
         run: npm run build

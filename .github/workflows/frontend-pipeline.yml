@@ -44,7 +44,13 @@ jobs:
       
       - name: Install dependencies
         working-directory: frontend
-        run: npm ci --prefer-offline --no-audit
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "No package-lock.json found, generating..."
+            npm install --no-audit
+          else
+            npm ci --prefer-offline --no-audit
+          fi
       
       - name: Run ESLint
         working-directory: frontend
@@ -103,7 +109,13 @@ jobs:
       
       - name: Install dependencies
         working-directory: frontend
-        run: npm ci --prefer-offline
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "No package-lock.json found, generating..."
+            npm install
+          else
+            npm ci --prefer-offline
+          fi
       
       - name: Run npm audit
         working-directory: frontend
@@ -182,7 +194,13 @@ jobs:
       
       - name: Install dependencies
         working-directory: frontend
-        run: npm ci --prefer-offline
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "No package-lock.json found, generating..."
+            npm install
+          else
+            npm ci --prefer-offline
+          fi
       
       - name: Run unit tests (shard ${{ matrix.shard }}/3)
         working-directory: frontend
@@ -262,7 +280,13 @@ jobs:
       
       - name: Install dependencies
         working-directory: frontend
-        run: npm ci --prefer-offline
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "No package-lock.json found, generating..."
+            npm install
+          else
+            npm ci --prefer-offline
+          fi
       
       - name: Run integration tests
         working-directory: frontend
@@ -298,7 +322,13 @@ jobs:
       
       - name: Install dependencies
         working-directory: frontend
-        run: npm ci --prefer-offline
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "No package-lock.json found, generating..."
+            npm install
+          else
+            npm ci --prefer-offline
+          fi
       
       - name: Build web application
         working-directory: frontend/apps/web
@@ -496,7 +526,13 @@ jobs:
       
       - name: Install dependencies
         working-directory: frontend
-        run: npm ci --prefer-offline
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "No package-lock.json found, generating..."
+            npm install
+          else
+            npm ci --prefer-offline
+          fi
       
       - name: Setup Detox
         working-directory: frontend/apps/mobile
@@ -541,7 +577,13 @@ jobs:
       
       - name: Install dependencies
         working-directory: frontend
-        run: npm ci --prefer-offline
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "No package-lock.json found, generating..."
+            npm install
+          else
+            npm ci --prefer-offline
+          fi
       
       - name: Download build artifacts
         uses: actions/download-artifact@v3
@@ -616,7 +658,13 @@ jobs:
       
       - name: Install dependencies
         working-directory: frontend
-        run: npm ci --prefer-offline
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "No package-lock.json found, generating..."
+            npm install
+          else
+            npm ci --prefer-offline
+          fi
       
       - name: Run RTL-specific tests
         working-directory: frontend
@@ -668,7 +716,13 @@ jobs:
       
       - name: Install dependencies
         working-directory: frontend
-        run: npm ci --prefer-offline
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "No package-lock.json found, generating..."
+            npm install
+          else
+            npm ci --prefer-offline
+          fi
       
       - name: Run axe accessibility tests
         working-directory: frontend

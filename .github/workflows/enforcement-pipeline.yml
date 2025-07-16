@@ -279,7 +279,12 @@ jobs:
           
       - name: Run Integration Tests
         run: |
-          npm ci
+          if [ ! -f package-lock.json ]; then
+            echo "No package-lock.json found, generating..."
+            npm install
+          else
+            npm ci
+          fi
           npm run test:integration
           
       - name: Run E2E Tests
